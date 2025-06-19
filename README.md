@@ -1,4 +1,4 @@
-# AI Quiz Generator
+# AI Quiz Generator & Summarizer
 
 This application generates quizzes from PDF documents using AI. It now uses the Cohere API to generate high-quality questions and answers.
 
