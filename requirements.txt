@@ -4,3 +4,4 @@ python-dotenv==1.0.1
 requests==2.31.0
 cohere>=4.44
 pdfplumber==0.10.3 
+gTTS==2.5.1
