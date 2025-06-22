@@ -14,12 +14,10 @@ class QuizGenerator:
         self.co = cohere.Client(api_key)
 
     def chunk_text(self, text, max_length=3000):
-        """Split text into chunks of max_length characters"""
         words = text.split()
         chunks = []
         current_chunk = []
         current_length = 0
-        
         for word in words:
             if current_length + len(word) + 1 <= max_length:
                 current_chunk.append(word)
@@ -28,7 +26,6 @@ class QuizGenerator:
                 chunks.append(' '.join(current_chunk))
                 current_chunk = [word]
                 current_length = len(word)
-        
         if current_chunk:
             chunks.append(' '.join(current_chunk))
         return chunks
@@ -86,11 +83,8 @@ class QuizGenerator:
         for question in all_questions:
             options = question["options"]
             correct_letter = question["answer"]
-            # Find the correct option text
             correct_option = next((opt for opt in options if opt.startswith(correct_letter)), None)
-            # Shuffle options
             random.shuffle(options)
-            # Update the answer letter based on new position
             for idx, opt in enumerate(options):
                 if opt == correct_option:
                     question["answer"] = ["A", "B", "C", "D"][idx]
@@ -140,3 +134,91 @@ class QuizGenerator:
             return response.generations[0].text.strip()
         except Exception as e:
             return "Summary not available."
+
+    def answer_from_pdf(self, question, pdf_text):
+        prompt = f"""
+        You are a helpful assistant. Answer the following question based only on the provided PDF content. 
+        If the answer is not present in the PDF, say "Sorry, I couldn't find the answer in the PDF."
+
+        PDF Content:
+        {pdf_text[:4000]}
+
+        Question: {question}
+        Answer:
+        """
+        try:
+            response = self.co.generate(
+                model='command',
+                prompt=prompt,
+                max_tokens=200,
+                temperature=0.3,
+                k=0,
+                stop_sequences=[],
+                return_likelihoods='NONE'
+            )
+            return response.generations[0].text.strip()
+        except Exception as e:
+            return "Sorry, I couldn't process your question right now."
+
+    def extract_topics(self, pdf_text):
+        import streamlit as st
+        import ast
+
+        prompt = (
+            "List the main topics or chapters covered in the following PDF content. "
+            "Return ONLY a Python list of strings, e.g. ['Topic 1', 'Topic 2', 'Topic 3'].\n\n"
+            f"PDF Content:\n{pdf_text[:4000]}"
+        )
+        response = self.co.generate(
+            model='command',
+            prompt=prompt,
+            max_tokens=200,
+            temperature=0.3,
+            k=0,
+            stop_sequences=[],
+            return_likelihoods='NONE'
+        )
+        raw = response.generations[0].text.strip()
+        st.write("LLM raw output:", raw)  # Debug line
+
+        try:
+            topics = ast.literal_eval(raw)
+            if isinstance(topics, list):
+                return topics
+        except Exception as e:
+            st.error(f"Topic extraction error: {e}")
+
+        # Fallback: try to extract a list from a string inside a list
+        import re
+        # If fallback is a list with one string that looks like a list
+        if raw.startswith("[") and raw.endswith("]"):
+            try:
+                possible_list = ast.literal_eval(raw)
+                if (isinstance(possible_list, list) and len(possible_list) == 1 
+                        and isinstance(possible_list[0], str) and possible_list[0].startswith("[") and possible_list[0].endswith("]")):
+                    topics = ast.literal_eval(possible_list[0])
+                    st.info(f"Recovered topics: {topics}")
+                    return topics
+            except Exception:
+                pass
+
+        # Fallback: try to split lines if not a list
+        topics = []
+        for line in raw.splitlines():
+            line = line.strip("-* \n")
+            if line and not line.startswith("Let me know"):
+                topics.append(line)
+        st.info(f"Fallback topic extraction: {topics}")
+        return topics
+
+    def get_topic_summary(self, prompt):
+        response = self.co.generate(
+            model='command',
+            prompt=prompt,
+            max_tokens=150,
+            temperature=0.5,
+            k=0,
+            stop_sequences=[],
+            return_likelihoods='NONE'
+        )
+        return response.generations[0].text.strip()

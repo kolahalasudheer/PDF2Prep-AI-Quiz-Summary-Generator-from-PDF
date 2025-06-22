@@ -1,62 +1,94 @@
-# AI Quiz Generator & Summarizer
+# PDF2Prep
 
-This application generates quizzes from PDF documents using AI. It now uses the Cohere API to generate high-quality questions and answers.
+**PDF2Prep** is an AI-powered Streamlit app that helps you learn from any PDF by generating quizzes, summaries, topic explorers, and more!
 
-## Features
+---
 
-- Upload PDF documents
-- Generate multiple-choice questions
-- Interactive quiz interface
-- Score tracking
-- Detailed results review
+## 🚀 Features
 
-## Setup
+- **Quiz & Summary:**  
+  Generate multiple-choice quizzes and concise summaries from any PDF.
+- **Ask PDF2Prep Chatbot:**  
+  Ask questions about your PDF and get instant, context-aware answers.
+- **Personal Notes:**  
+  Write and save your own notes while studying.
+- **Explore Topics (Interactive Concept Explorer):**  
+  - Automatically extracts main topics/chapters from your PDF.
+  - For each topic, see a summary, listen to an audio explanation, get related YouTube videos, and ask the chatbot about that topic.
 
-1. Clone this repository
-2. Install the required packages:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Set up your Cohere API key:
-   - Go to [Cohere Dashboard](https://dashboard.cohere.com/api-keys) and sign in with your Cohere account
-   - Click "Create API Key" and copy your key
-   - Create a `.env` file in the project root directory
-   - Add your key to the `.env` file:
-     ```
-     COHERE_API_KEY=your_actual_cohere_api_key_here
-     ```
-4. Run the application:
-   ```bash
-   streamlit run app.py
-   ```
+---
 
-## Usage
+## 🖥️ How to Run
 
-1. Open the application in your web browser
-2. Upload a PDF file
-3. Select the number of questions you want to generate
-4. Click "Generate Quiz"
-5. Answer the questions
-6. Review your results
+1. **Clone this repository** and navigate to the project folder.
 
-## Technical Details
+2. **Install dependencies:**
+    ```sh
+    pip install -r requirements.txt
+    ```
 
-- Built with Streamlit for the web interface
-- Uses PyPDF2 for PDF processing
-- Powered by Cohere Command model
-- Implements advanced prompt engineering for high-quality question generation
+3. **Set up your Cohere API key:**
+    - Create a `.env` file in the root directory.
+    - Add:
+      ```
+      COHERE_API_KEY=your_cohere_api_key_here
+      ```
 
-## Requirements
+4. **Run the app:**
+    ```sh
+    streamlit run app.py
+    ```
+
+---
+
+## 📄 Usage
+
+1. **Upload a PDF** using the sidebar.
+2. **Navigate** using the sidebar menu:
+    - **Quiz & Summary:** Generate and take quizzes, or get a summary.
+    - **Ask PDF2Prep Chatbot:** Ask any question about your PDF.
+    - **Personal Notes:** Write and save your own notes.
+    - **Explore Topics:** Click to expand topics, read/listen to summaries, watch related videos, and ask topic-specific questions.
+
+---
+
+## 🛠️ Requirements
 
 - Python 3.8+
-- Internet connection for API access
-- Cohere API key
+- [Streamlit](https://streamlit.io/)
+- [PyPDF2](https://pypdf2.readthedocs.io/)
+- [gTTS](https://pypi.org/project/gTTS/)
+- [cohere](https://docs.cohere.com/docs/quickstart)
+- [python-dotenv](https://pypi.org/project/python-dotenv/)
 
-## Notes
+Install all dependencies with:
+```sh
+pip install streamlit PyPDF2 gtts cohere python-dotenv
+```
 
-- The quality of generated questions depends on the content of the PDF
-- Processing time may vary based on the size of the PDF and number of questions
-- Make sure your PDF is text-based (not scanned images) for best results
+---
+
+## 📢 Notes
+
+- The **Explore Topics** feature works best with text-based (not scanned/image) PDFs.
+- The app uses Cohere’s LLM for all AI features. Make sure your API key is valid and you have quota.
+- Audio summaries require an internet connection (for gTTS).
+
+---
+
+## 🤝 Contributing
+
+Pull requests and suggestions are welcome!
+
+---
+
+## 📃 License
+
+MIT License
+
+---
+
+**Enjoy learning with PDF2Prep!**
 
 ## Project Structure
 
