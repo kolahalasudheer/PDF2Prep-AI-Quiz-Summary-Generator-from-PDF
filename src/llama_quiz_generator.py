@@ -1,8 +1,11 @@
 import os
-from dotenv import load_dotenv
-import cohere
+import ast
 import json
 import random
+import re
+from dotenv import load_dotenv
+import cohere
+import streamlit as st
 
 load_dotenv()
 
@@ -14,6 +17,7 @@ class QuizGenerator:
         self.co = cohere.Client(api_key)
 
     def chunk_text(self, text, max_length=3000):
+        """Splits text into chunks for processing."""
         words = text.split()
         chunks = []
         current_chunk = []
@@ -31,6 +35,7 @@ class QuizGenerator:
         return chunks
 
     def generate_quiz(self, text, question_count, difficulty="medium", topic=""):
+        """Generates a quiz from the PDF text."""
         topic_instruction = f" Focus ONLY on the topic/chapter: '{topic}'." if topic else ""
         chunks = self.chunk_text(text)
         questions_per_chunk = max(1, question_count // len(chunks))
@@ -76,7 +81,7 @@ class QuizGenerator:
                         remaining_questions -= len(chunk_data)
                 except json.JSONDecodeError:
                     continue
-            except Exception as e:
+            except Exception:
                 continue
 
         # Shuffle options for each question and update the answer letter accordingly
@@ -93,6 +98,7 @@ class QuizGenerator:
         return all_questions if all_questions else []
 
     def generate_explanation(self, question, correct_option, text):
+        """Generates an explanation for a quiz question."""
         prompt = f"""
         Explain why the correct answer to the following multiple choice question is {correct_option}.
 
@@ -111,10 +117,11 @@ class QuizGenerator:
                 return_likelihoods='NONE'
             )
             return response.generations[0].text.strip()
-        except Exception as e:
+        except Exception:
             return "Explanation not available."
 
     def summarize_pdf(self, text):
+        """Summarizes the PDF content in a topic-wise manner."""
         prompt = """
         Summarize the following PDF content in a topic-wise manner. For each topic or chapter, provide a short, crisp, and easy-to-understand explanation (2-3 sentences per topic) so that a beginner can quickly grasp the main ideas.
 
@@ -132,10 +139,11 @@ class QuizGenerator:
                 return_likelihoods='NONE'
             )
             return response.generations[0].text.strip()
-        except Exception as e:
+        except Exception:
             return "Summary not available."
 
     def answer_from_pdf(self, question, pdf_text):
+        """Answers a question based on the PDF content."""
         prompt = f"""
         You are a helpful assistant. Answer the following question based only on the provided PDF content. 
         If the answer is not present in the PDF, say "Sorry, I couldn't find the answer in the PDF."
@@ -157,22 +165,25 @@ class QuizGenerator:
                 return_likelihoods='NONE'
             )
             return response.generations[0].text.strip()
-        except Exception as e:
+        except Exception:
             return "Sorry, I couldn't process your question right now."
 
     def extract_topics(self, pdf_text):
-        import streamlit as st
-        import ast
-
+        """
+        Extracts ONLY the MAIN topics or chapters from the PDF content.
+        Returns a clean Python list of strings.
+        Handles LLM quirks robustly.
+        """
         prompt = (
-            "List the main topics or chapters covered in the following PDF content. "
-            "Return ONLY a Python list of strings, e.g. ['Topic 1', 'Topic 2', 'Topic 3'].\n\n"
+            "List ONLY the MAIN topics or chapters (not subtopics or details) from the following PDF content. "
+            "Return ONLY a Python list of strings, with each main topic or chapter as a separate string. "
+            "Do NOT add any explanation or extra text. Example: ['Chapter 1: Introduction', 'Chapter 2: Data Structures', 'Chapter 3: Algorithms']\n\n"
             f"PDF Content:\n{pdf_text[:4000]}"
         )
         response = self.co.generate(
             model='command',
             prompt=prompt,
-            max_tokens=200,
+            max_tokens=300,
             temperature=0.3,
             k=0,
             stop_sequences=[],
@@ -181,26 +192,19 @@ class QuizGenerator:
         raw = response.generations[0].text.strip()
         st.write("LLM raw output:", raw)  # Debug line
 
-        try:
-            topics = ast.literal_eval(raw)
-            if isinstance(topics, list):
-                return topics
-        except Exception as e:
-            st.error(f"Topic extraction error: {e}")
-
-        # Fallback: try to extract a list from a string inside a list
-        import re
-        # If fallback is a list with one string that looks like a list
-        if raw.startswith("[") and raw.endswith("]"):
+        # Use regex to extract the first list-like string
+        match = re.search(r"\[[^\[\]]+\]", raw, re.DOTALL)
+        if match:
+            list_str = match.group(0)
             try:
-                possible_list = ast.literal_eval(raw)
-                if (isinstance(possible_list, list) and len(possible_list) == 1 
-                        and isinstance(possible_list[0], str) and possible_list[0].startswith("[") and possible_list[0].endswith("]")):
-                    topics = ast.literal_eval(possible_list[0])
-                    st.info(f"Recovered topics: {topics}")
+                topics = ast.literal_eval(list_str)
+                if isinstance(topics, list):
+                    topics = [t.strip() for t in topics if t.strip()]
+                    topics = list(dict.fromkeys(topics))  # Remove duplicates, preserve order
+                    st.info(f"Extracted topics: {topics}")
                     return topics
-            except Exception:
-                pass
+            except Exception as e:
+                st.error(f"Topic extraction error: {e}")
 
         # Fallback: try to split lines if not a list
         topics = []
@@ -208,10 +212,31 @@ class QuizGenerator:
             line = line.strip("-* \n")
             if line and not line.startswith("Let me know"):
                 topics.append(line)
-        st.info(f"Fallback topic extraction: {topics}")
-        return topics
+        # Handle case where first element is a stringified list
+        if topics and isinstance(topics, list):
+            first = topics[0]
+            if isinstance(first, str) and first.strip().startswith("[") and first.strip().endswith("]"):
+                try:
+                    inner_topics = ast.literal_eval(first)
+                    if isinstance(inner_topics, list):
+                        inner_topics = [t.strip() for t in inner_topics if t.strip()]
+                        inner_topics = list(dict.fromkeys(inner_topics))
+                        st.info(f"Recovered topics from string: {inner_topics}")
+                        return inner_topics
+                except Exception as e:
+                    st.error(f"Nested topic extraction error: {e}")
+            # Otherwise, filter out non-topic lines
+            topics = [t for t in topics if "[" not in t and "Let me know" not in t]
+            topics = [t.strip() for t in topics if t.strip()]
+            topics = list(dict.fromkeys(topics))
+            st.info(f"Cleaned fallback topics: {topics}")
+            return topics
+
+        st.info("No topics found.")
+        return []
 
     def get_topic_summary(self, prompt):
+        """Gets a summary for a specific topic."""
         response = self.co.generate(
             model='command',
             prompt=prompt,

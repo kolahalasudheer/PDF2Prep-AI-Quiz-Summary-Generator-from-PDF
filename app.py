@@ -56,6 +56,12 @@ def play_summary_audio(summary_text, topic):
     audio_file.close()
     os.remove(filename)
 
+# --- Caching for topic extraction ---
+@st.cache_data(show_spinner="Extracting topics from PDF...")
+def cached_extract_topics(text):
+    return quiz_generator.extract_topics(text)
+# ------------------------------------
+
 def main():
     st.title("PDF2Prep: AI Quiz, Summary & Concept Explorer")
     st.success("Welcome to PDF2Prep!")
@@ -253,7 +259,7 @@ def main():
             # Extract topics if not already done
             if not st.session_state.concept_topics:
                 with st.spinner("Extracting topics from PDF..."):
-                    st.session_state.concept_topics = quiz_generator.extract_topics(text)
+                    st.session_state.concept_topics = cached_extract_topics(text)
 
             topics = st.session_state.concept_topics
 
