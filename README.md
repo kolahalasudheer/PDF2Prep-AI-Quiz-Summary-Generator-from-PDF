@@ -5,6 +5,10 @@ https://github.com/user-attachments/assets/52667c7f-8695-419e-914c-09ed89723b95
 
 
 
+
+
+https://github.com/user-attachments/assets/52667c7f-8695-419e-914c-09ed89723b95
+
 **PDF2Prep** is an AI-powered Streamlit app that helps you learn from any PDF by generating quizzes, summaries, topic explorers, and more!
 
 ---
