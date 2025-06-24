@@ -103,5 +103,3 @@ MIT License
     └── utils.py         # Utility functions
 ``` 
 
-https://github.com/user-attachments/assets/89eef94a-f5a4-4d56-8179-c52530406fef
-
