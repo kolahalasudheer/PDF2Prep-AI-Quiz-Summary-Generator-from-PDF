@@ -23,7 +23,11 @@
 1. **Clone this repository** and navigate to the project folder.
 
 2. **Install dependencies:**
-    ```sh
+    
+
+https://github.com/user-attachments/assets/52667c7f-8695-419e-914c-09ed89723b95
+
+```sh
     pip install -r requirements.txt
     ```
 
