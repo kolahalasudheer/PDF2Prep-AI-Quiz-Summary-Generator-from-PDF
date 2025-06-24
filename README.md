@@ -1,7 +1,6 @@
 # PDF2Prep
 
 LIVE DEMO
-https://github.com/user-attachments/assets/52667c7f-8695-419e-914c-09ed89723b95
 
 
 
